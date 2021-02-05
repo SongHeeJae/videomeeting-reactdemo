@@ -1,7 +1,9 @@
-import logo from './logo.svg';
-import './App.css';
+import logo from "./logo.svg";
+import "./App.css";
+import { Janus } from "janus-gateway";
 
 function App() {
+  console.log(Janus);
   return (
     <div className="App">
       <header className="App-header">
