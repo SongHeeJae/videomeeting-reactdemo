@@ -1,5 +1,6 @@
 import React, { createRef, useEffect, useState, useRef } from "react";
 import { Janus } from "janus-gateway";
+import Video from "./Video/Video";
 
 const useReference = () => {
   const [reference, setReference] = useState(() => createRef());
@@ -10,6 +11,7 @@ const VideoMeetingPage = (props) => {
   const localVideoRef = useReference();
   const remoteVideosRef = useRef({});
   const [feeds, setFeeds] = useState([]);
+  const [myFeed, setMyFeed] = useState({});
 
   const connectFeed = (feed) => {
     setFeeds((prevFeeds) => [...prevFeeds, feed]);
@@ -109,13 +111,17 @@ const VideoMeetingPage = (props) => {
                 Janus.debug("Event : " + event);
                 if (event) {
                   if (event === "joined") {
-                    myid = msg["id"];
-                    mypvtid = msg["private_id"];
+                    setMyFeed(() => ({
+                      id: msg["id"],
+                      pvtid: msg["private_id"],
+                    }));
+                    // myid = msg["id"];
+                    // mypvtid = msg["private_id"];
                     Janus.log(
                       "Successfully joined room " +
                         msg["room"] +
                         " with ID " +
-                        myid
+                        myFeed.id
                     );
                     if (subscriber_mode) {
                       // 비디오 숨김
@@ -275,7 +281,12 @@ const VideoMeetingPage = (props) => {
               onlocalstream: function (stream) {
                 Janus.debug(" ::: Got a local stream :::", stream);
                 mystream = stream;
-                Janus.attachMediaStream(localVideoRef.current, stream);
+                // Janus.attachMediaStream(localVideoRef.current, stream);
+                // localVideoRef.current.props = stream;
+                setMyFeed((prev) => ({
+                  ...prev,
+                  stream: stream,
+                }));
                 if (
                   sfutest.webrtcStuff.pc.iceConnectionState !== "completed" &&
                   sfutest.webrtcStuff.pc.iceConnectionState !== "connected"
@@ -379,7 +390,7 @@ const VideoMeetingPage = (props) => {
             room: myroom,
             ptype: "subscriber",
             feed: id,
-            private_id: mypvtid,
+            private_id: myFeed.mypvtid,
           };
           remoteFeed.videoCodec = video;
           remoteFeed.send({ message: subscribe });
@@ -463,14 +474,13 @@ const VideoMeetingPage = (props) => {
         onremotestream: function (stream) {
           Janus.debug("Remote feed #" + remoteFeed.rfid + ", stream:", stream);
 
-          // 비디오 추가해서 스트림 붙여주기
-
-          console.log(feeds.length);
-          console.log("====ㅋㅋ", remoteVideosRef.current[remoteFeed.rfid]);
-          Janus.attachMediaStream(
-            remoteVideosRef.current[remoteFeed.rfid],
-            stream
-          );
+          setFeeds((prev) => {
+            let findIndex = prev.findIndex((f) => f.rfid === remoteFeed.rfid);
+            let newFeed = [...prev];
+            newFeed[findIndex].stream = stream;
+            return newFeed;
+          });
+          // remoteFeed.stream = stream;
           var videoTracks = stream.getVideoTracks();
           if (!videoTracks || videoTracks.length === 0) {
             // 원격 비디오 없는 경우
@@ -497,31 +507,13 @@ const VideoMeetingPage = (props) => {
   }, []);
 
   const renderRemoteVideos = feeds.map((feed) => {
-    return (
-      <video
-        width="100%"
-        height="100%"
-        key={`remoteVideo-${feed.rfid}`}
-        autoPlay
-        playsInline
-        ref={(e) => {
-          remoteVideosRef.current[feed.rfid] = e;
-        }}
-      />
-    );
+    return <Video stream={feed.stream} key={feed.rfid} />;
   });
 
   return (
     <>
       비디오 화면
-      <video
-        autoPlay
-        playsInline
-        ref={localVideoRef}
-        width="100%"
-        height="100%"
-        key="localVideo"
-      />
+      {myFeed && <Video stream={myFeed.stream} />}
       {renderRemoteVideos}
     </>
   );
