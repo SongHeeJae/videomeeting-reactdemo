@@ -1,4 +1,4 @@
-import React, { createRef, useEffect, useState } from "react";
+import React, { createRef, useEffect, useState, useRef } from "react";
 import { Janus } from "janus-gateway";
 
 const useReference = () => {
@@ -8,10 +8,18 @@ const useReference = () => {
 
 const VideoMeetingPage = (props) => {
   const localVideoRef = useReference();
+  const remoteVideosRef = useRef({});
+  const [feeds, setFeeds] = useState([]);
+
+  const connectFeed = (feed) => {
+    setFeeds((prevFeeds) => [...prevFeeds, feed]);
+  };
+
+  const disconnectFeed = (feed) => {
+    setFeeds((prevFeeds) => prevFeeds.filter((f) => f.rfid !== feed.rfid));
+  };
 
   useEffect(() => {
-    console.log("실행");
-
     let servers = [
       process.env.REACT_APP_JANUS_GATEWAY_1,
       process.env.REACT_APP_JANUS_GATEWAY_2,
@@ -27,14 +35,13 @@ const VideoMeetingPage = (props) => {
     let myroom = 1234; // Demo room
     if (getQueryStringValue("room") !== "")
       myroom = parseInt(getQueryStringValue("room"));
-    let feeds = []; // 접속자들
 
     let doSimulcast = false; // 동시 캐스트
     let doSimulcast2 = false;
 
     Janus.init({
       debug: "all",
-      //   dependencies: useDefaultDependencies,
+      //   dependencies: Janus.useDefaultDependencies(),
       callback: function () {
         janus = new Janus({
           server: servers,
@@ -177,7 +184,7 @@ const VideoMeetingPage = (props) => {
                       var leaving = msg["leaving"];
                       Janus.log("Publisher left: " + leaving);
                       var remoteFeed = null;
-                      for (var i = 1; i < 6; i++) {
+                      for (var i = 0; i < feeds.length; i++) {
                         if (feeds[i] && feeds[i].rfid === leaving) {
                           remoteFeed = feeds[i];
                           break;
@@ -193,36 +200,36 @@ const VideoMeetingPage = (props) => {
                             ") has left the room, detaching"
                         );
                         // ++ 해당 비디오 닫아주는 코드
-                        feeds[remoteFeed.rfindex] = null;
+                        disconnectFeed(remoteFeed);
                         remoteFeed.detach();
                       }
                     } else if (msg["unpublished"]) {
-                      let unpublished = msg["unpublished"];
-                      Janus.log("publisher left: " + unpublished);
-                      if (unpublished === "ok") {
-                        // 이미 unpblished상태면?
-                        sfutest.hangup();
-                        return;
-                      }
-                      let remoteFeed = null;
-                      for (let i = 1; i < 6; i++) {
-                        if (feeds[i] && feeds[i].rfid === unpublished) {
-                          remoteFeed = feeds[i];
-                          break;
-                        }
-                      }
-                      if (remoteFeed != null) {
-                        Janus.debug(
-                          "Feed " +
-                            remoteFeed.rfid +
-                            " (" +
-                            remoteFeed.rfdisplay +
-                            ") has left the room, detaching"
-                        );
-                        // 비디오 가리는 코드
-                        feeds[remoteFeed.rfindex] = null;
-                        remoteFeed.detach();
-                      }
+                      //   let unpublished = msg["unpublished"];
+                      //   Janus.log("publisher left: " + unpublished);
+                      //   if (unpublished === "ok") {
+                      //     // 이미 unpblished상태면?
+                      //     sfutest.hangup();
+                      //     return;
+                      //   }
+                      //   let remoteFeed = null;
+                      //   for (let i = 1; i < 6; i++) {
+                      //     if (feeds[i] && feeds[i].rfid === unpublished) {
+                      //       remoteFeed = feeds[i];
+                      //       break;
+                      //     }
+                      //   }
+                      //   if (remoteFeed != null) {
+                      //     Janus.debug(
+                      //       "Feed " +
+                      //         remoteFeed.rfid +
+                      //         " (" +
+                      //         remoteFeed.rfdisplay +
+                      //         ") has left the room, detaching"
+                      //     );
+                      //     // 비디오 가리는 코드
+                      //     feeds[remoteFeed.rfindex] = null;
+                      //     remoteFeed.detach();
+                      //   }
                     } else if (msg["error"]) {
                       // 426 코드 방 X
                       alert(msg["error"]);
@@ -232,8 +239,7 @@ const VideoMeetingPage = (props) => {
 
                 if (jsep) {
                   sfutest.handleRemoteJsep({ jsep: jsep });
-
-                  var audio = msg["audio-codec"];
+                  var audio = msg["audio_codec"];
                   if (
                     mystream &&
                     mystream.getAudioTracks() &&
@@ -320,7 +326,6 @@ const VideoMeetingPage = (props) => {
         simulcast2: doSimulcast2,
         success: function (jsep) {
           Janus.debug("Got publisher SDP!", jsep);
-          console.log("성공했음");
           var publish = { request: "configure", audio: useAudio, video: true };
           sfutest.send({ message: publish, jsep: jsep });
         },
@@ -354,7 +359,7 @@ const VideoMeetingPage = (props) => {
       // A new feed has been published, create a new plugin handle and attach to it as a subscriber
       // 새 피드가 구독되었으므로, 새 플러그인 만들고 remote 연결
 
-      var remoteFeed = null;
+      let remoteFeed = null;
       janus.attach({
         plugin: "janus.plugin.videoroom",
         opaqueId: opaqueId,
@@ -369,8 +374,7 @@ const VideoMeetingPage = (props) => {
               ")"
           );
           Janus.log("  -- This is a subscriber");
-          // We wait for the plugin to send us an offer
-          var subscribe = {
+          let subscribe = {
             request: "join",
             room: myroom,
             ptype: "subscriber",
@@ -391,17 +395,9 @@ const VideoMeetingPage = (props) => {
             console.log(msg["error"]);
           } else if (event) {
             if (event === "attached") {
-              // Subscriber created and attached
-              for (var i = 1; i < 6; i++) {
-                if (!feeds[i]) {
-                  feeds[i] = remoteFeed;
-                  remoteFeed.rfindex = i;
-                  break;
-                }
-              }
               remoteFeed.rfid = msg["id"];
               remoteFeed.rfdisplay = msg["display"];
-
+              connectFeed(remoteFeed);
               Janus.log(
                 "Successfully attached to feed " +
                   remoteFeed.rfid +
@@ -447,7 +443,7 @@ const VideoMeetingPage = (props) => {
         iceState: function (state) {
           Janus.log(
             "ICE state of this WebRTC PeerConnection (feed #" +
-              remoteFeed.rfindex +
+              remoteFeed.rfid +
               ") changed to " +
               state
           );
@@ -455,7 +451,7 @@ const VideoMeetingPage = (props) => {
         webrtcState: function (on) {
           Janus.log(
             "Janus says this WebRTC PeerConnection (feed #" +
-              remoteFeed.rfindex +
+              remoteFeed.rfid +
               ") is " +
               (on ? "up" : "down") +
               " now"
@@ -465,12 +461,16 @@ const VideoMeetingPage = (props) => {
           // The subscriber stream is recvonly, we don't expect anything here
         },
         onremotestream: function (stream) {
-          Janus.debug(
-            "Remote feed #" + remoteFeed.rfindex + ", stream:",
+          Janus.debug("Remote feed #" + remoteFeed.rfid + ", stream:", stream);
+
+          // 비디오 추가해서 스트림 붙여주기
+
+          console.log(feeds.length);
+          console.log("====ㅋㅋ", remoteVideosRef.current[remoteFeed.rfid]);
+          Janus.attachMediaStream(
+            remoteVideosRef.current[remoteFeed.rfid],
             stream
           );
-
-          Janus.attachMediaStream("원격 비디오 엘리먼트", stream);
           var videoTracks = stream.getVideoTracks();
           if (!videoTracks || videoTracks.length === 0) {
             // 원격 비디오 없는 경우
@@ -483,6 +483,8 @@ const VideoMeetingPage = (props) => {
             " ::: Got a cleanup notification (remote feed " + id + ") :::"
           );
           // 원격피드 끊기는 경우 처리
+          console.log("다른 사용자 나감 ㅇㅇㅇ");
+          disconnectFeed(remoteFeed);
         },
       });
     }
@@ -494,6 +496,21 @@ const VideoMeetingPage = (props) => {
     }
   }, []);
 
+  const renderRemoteVideos = feeds.map((feed) => {
+    return (
+      <video
+        width="100%"
+        height="100%"
+        key={`remoteVideo-${feed.rfid}`}
+        autoPlay
+        playsInline
+        ref={(e) => {
+          remoteVideosRef.current[feed.rfid] = e;
+        }}
+      />
+    );
+  });
+
   return (
     <>
       비디오 화면
@@ -503,13 +520,9 @@ const VideoMeetingPage = (props) => {
         ref={localVideoRef}
         width="100%"
         height="100%"
-        id="localVideo"
+        key="localVideo"
       />
-      <video width="100%" height="100%" id="remoteVideo1" />
-      <video width="100%" height="100%" id="remoteVideo2" />
-      <video width="100%" height="100%" id="remoteVideo3" />
-      <video width="100%" height="100%" id="remoteVideo4" />
-      <video width="100%" height="100%" id="remoteVideo5" />
+      {renderRemoteVideos}
     </>
   );
 };
