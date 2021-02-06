@@ -5,9 +5,21 @@ const Video = (props) => {
   useEffect(() => {
     videoRef.current.srcObject = props.stream;
   }, [props.stream]);
+
+  const onClick = (e) => {
+    if (!props.onClick) return;
+    props.onClick(videoRef.current.srcObject);
+  };
+
   return (
     <>
-      <video autoPlay playsInline width="100%" height="100%" ref={videoRef} />
+      <video
+        autoPlay
+        playsInline
+        style={{ height: "100%" }}
+        ref={videoRef}
+        onClick={onClick}
+      />
     </>
   );
 };

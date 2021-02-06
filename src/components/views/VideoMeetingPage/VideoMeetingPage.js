@@ -8,8 +8,7 @@ const useReference = () => {
 };
 
 const VideoMeetingPage = (props) => {
-  const localVideoRef = useReference();
-  const remoteVideosRef = useRef({});
+  const [mainStream, setMainStream] = useState(null);
   const [feeds, setFeeds] = useState([]);
   const [myFeed, setMyFeed] = useState({});
 
@@ -506,15 +505,37 @@ const VideoMeetingPage = (props) => {
     }
   }, []);
 
+  const handleMainStream = (stream) => {
+    setMainStream(stream);
+  };
+
   const renderRemoteVideos = feeds.map((feed) => {
-    return <Video stream={feed.stream} key={feed.rfid} />;
+    return (
+      <Video stream={feed.stream} key={feed.rfid} onClick={handleMainStream} />
+    );
   });
 
   return (
     <>
-      비디오 화면
-      {myFeed && <Video stream={myFeed.stream} />}
-      {renderRemoteVideos}
+      <div
+        style={{
+          width: "100%",
+          height: "500px",
+        }}
+      >
+        <Video stream={mainStream} />
+      </div>
+      <div
+        style={{
+          width: "100%",
+          height: "300px",
+          overflowX: "scroll",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {myFeed && <Video stream={myFeed.stream} onClick={handleMainStream} />}
+        {renderRemoteVideos}
+      </div>
     </>
   );
 };
