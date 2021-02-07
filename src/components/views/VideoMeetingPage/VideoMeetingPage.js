@@ -552,6 +552,11 @@ const VideoMeetingPage = (props) => {
     });
   };
 
+  const sendPrivateChatData = (data, target) => {
+    console.log("귓속말 데이터", data);
+    console.log("보낼 유저네임", username);
+  };
+
   const handleMainStream = (stream, username) => {
     setMainStream(() => {
       return {
@@ -583,7 +588,11 @@ const VideoMeetingPage = (props) => {
           }}
         >
           <div style={{ width: "15%", float: "left" }}>
-            <UserList feeds={feeds} username={username} />
+            <UserList
+              feeds={feeds}
+              username={username}
+              sendPrivateChatData={sendPrivateChatData}
+            />
           </div>
           <div style={{ width: "60%", float: "left", height: "100%" }}>
             <Video stream={mainStream.stream} username={mainStream.username} />

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import UserListItem from "./UserListItem/UserListItem";
 import ContextMenu from "../../../ContextMenu/ContextMenu";
+import TextInputModal from "../../../TextInputModal/TextInputModal";
 
 const whisperMenu = "귓속말";
 const addFriendMenu = "친구추가";
@@ -10,6 +11,9 @@ const UserList = (props) => {
   const [userList, setUserList] = useState([]);
   const [contextMenuStatus, setContextMenuStatus] = useState({});
   const [activeUsername, setActiveUsername] = useState("");
+  const [textInputModalActiveStatus, setTextInputModalActiveStatus] = useState(
+    false
+  );
 
   useEffect(() => {
     setUserList(() => {
@@ -39,12 +43,16 @@ const UserList = (props) => {
   };
 
   const handleContextMenuItemClick = (clickMenu) => {
-    console.log("클릭한메뉴", clickMenu);
-    console.log("활성화된유저", activeUsername);
     if (clickMenu === whisperMenu) {
+      console.log("트루로바꿈");
+      setTextInputModalActiveStatus(() => true);
     } else if (clickMenu === addFriendMenu) {
     }
     inactiveContextMenu();
+  };
+
+  const handleTextInputModelConfirmText = (data) => {
+    props.sendPrivateChatData(data, activeUsername);
   };
 
   const renderUserList = userList.map((u) => {
@@ -53,6 +61,13 @@ const UserList = (props) => {
 
   return (
     <>
+      {textInputModalActiveStatus && (
+        <TextInputModal
+          title={"send whisper"}
+          onConfirm={handleTextInputModelConfirmText}
+          setActive={setTextInputModalActiveStatus}
+        />
+      )}
       <ContextMenu
         menus={menus}
         contextMenuStatus={contextMenuStatus}

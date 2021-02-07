@@ -8,7 +8,7 @@ const UserListItem = (props) => {
 
   return (
     <>
-      <p onContextMenu={handleRightClick}> ${props.username}</p>
+      <p onContextMenu={handleRightClick}> {props.username}</p>
     </>
   );
 };
