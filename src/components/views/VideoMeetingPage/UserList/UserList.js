@@ -9,7 +9,11 @@ const menus = [whisperMenu, addFriendMenu];
 
 const UserList = (props) => {
   const [userList, setUserList] = useState([]);
-  const [contextMenuStatus, setContextMenuStatus] = useState({});
+  const [contextMenuStatus, setContextMenuStatus] = useState({
+    xPos: 0,
+    yPos: 0,
+    active: false,
+  });
   const [activeUsername, setActiveUsername] = useState("");
   const [textInputModalActiveStatus, setTextInputModalActiveStatus] = useState(
     false
@@ -44,7 +48,6 @@ const UserList = (props) => {
 
   const handleContextMenuItemClick = (clickMenu) => {
     if (clickMenu === whisperMenu) {
-      console.log("트루로바꿈");
       setTextInputModalActiveStatus(() => true);
     } else if (clickMenu === addFriendMenu) {
     }
@@ -68,11 +71,13 @@ const UserList = (props) => {
           setActive={setTextInputModalActiveStatus}
         />
       )}
-      <ContextMenu
-        menus={menus}
-        contextMenuStatus={contextMenuStatus}
-        onItemClick={handleContextMenuItemClick}
-      />
+      {contextMenuStatus.active && (
+        <ContextMenu
+          menus={menus}
+          contextMenuStatus={contextMenuStatus}
+          onItemClick={handleContextMenuItemClick}
+        />
+      )}
       <div
         style={{ border: "solid 1px", overflow: "auto", height: "500px" }}
         onContextMenu={handleRightClick}

@@ -28,6 +28,7 @@ const TextInputModal = (props) => {
           top: "50%",
           backgroundColor: "white",
           transform: "translateX(-50%) translateY(-50%)",
+          zIndex: "1",
         }}
       >
         <strong>{props.title}</strong>

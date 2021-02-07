@@ -1,33 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 
 const ContextMenu = (props) => {
-  const [status, setStatus] = useState({ xPos: 0, yPos: 0, active: false });
-
   const handleClick = (e) => {
     props.onItemClick(e.currentTarget.value);
   };
-
-  useEffect(() => {
-    setStatus(() => {
-      return {
-        xPos: props.contextMenuStatus.xPos,
-        yPos: props.contextMenuStatus.yPos,
-        active: props.contextMenuStatus.active,
-      };
-    });
-  }, [props.contextMenuStatus]);
 
   return (
     <>
       <div
         style={{
           position: "absolute",
-          left: status.xPos,
-          top: status.yPos,
+          left: props.contextMenuStatus.xPos,
+          top: props.contextMenuStatus.yPos,
           border: "solid 1px",
           width: "100px",
           height: props.menus.length * 40,
-          display: status.active ? "block" : "none",
+          zIndex: "1",
+          backgroundColor: "white",
         }}
       >
         {props.menus.map((m) => {
