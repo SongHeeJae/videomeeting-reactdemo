@@ -2,6 +2,7 @@ import React, { createRef, useEffect, useState, useRef } from "react";
 import { Janus } from "janus-gateway";
 import Video from "./Video/Video";
 import Chatting from "./Chatting/Chatting";
+import UserList from "./UserList/UserList";
 
 const useReference = () => {
   const [reference, setReference] = useState(() => createRef());
@@ -581,10 +582,13 @@ const VideoMeetingPage = (props) => {
             height: "70%",
           }}
         >
-          <div style={{ width: "70%", float: "left", height: "100%" }}>
+          <div style={{ width: "15%", float: "left" }}>
+            <UserList feeds={feeds} username={username} />
+          </div>
+          <div style={{ width: "60%", float: "left", height: "100%" }}>
             <Video stream={mainStream.stream} username={mainStream.username} />
           </div>
-          <div style={{ width: "30%", float: "right", height: "100%" }}>
+          <div style={{ width: "25%", float: "right", height: "100%" }}>
             <Chatting sendChatData={sendChatData} receiveChat={receiveChat} />
           </div>
         </div>
