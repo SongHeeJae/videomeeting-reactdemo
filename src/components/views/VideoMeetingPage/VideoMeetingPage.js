@@ -1,6 +1,7 @@
 import React, { createRef, useEffect, useState, useRef } from "react";
 import { Janus } from "janus-gateway";
 import Video from "./Video/Video";
+import Chatting from "./Chatting/Chatting";
 
 const useReference = () => {
   const [reference, setReference] = useState(() => createRef());
@@ -303,6 +304,12 @@ const VideoMeetingPage = (props) => {
               onremotestream: function (stream) {
                 // 발행하는 스트림은 보내기만함
               },
+              ondataopen: function (data) {
+                console.log("data channel opened");
+              },
+              ondata: function (data) {
+                console.log("데이터 수신", data);
+              },
               oncleanup: function () {
                 // 피어커넥션 플러그인 닫혔을 때
                 Janus.log(
@@ -327,6 +334,7 @@ const VideoMeetingPage = (props) => {
       sfutest.createOffer({
         // 데이터채널도 원하면 data:true
         media: {
+          data: true,
           audioRecv: false,
           videoRecv: false,
           audioSend: useAudio,
@@ -438,7 +446,7 @@ const VideoMeetingPage = (props) => {
             // Answer and attach
             remoteFeed.createAnswer({
               jsep: jsep,
-              media: { audioSend: false, videoSend: false }, // We want recvonly audio/video
+              media: { data: true, audioSend: false, videoSend: false }, // We want recvonly audio/video
               success: function (jsep) {
                 Janus.debug("Got SDP!", jsep);
                 var body = { request: "start", room: myroom };
@@ -511,30 +519,48 @@ const VideoMeetingPage = (props) => {
 
   const renderRemoteVideos = feeds.map((feed) => {
     return (
-      <Video stream={feed.stream} key={feed.rfid} onClick={handleMainStream} />
+      <Video
+        stream={feed.stream}
+        key={feed.rfid}
+        onClick={handleMainStream}
+        style={{ width: "100px", height: "100px" }}
+      />
     );
   });
 
   return (
     <>
-      <div
-        style={{
-          width: "100%",
-          height: "500px",
-        }}
-      >
-        <Video stream={mainStream} />
-      </div>
-      <div
-        style={{
-          width: "100%",
-          height: "300px",
-          overflowX: "scroll",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {myFeed && <Video stream={myFeed.stream} onClick={handleMainStream} />}
-        {renderRemoteVideos}
+      <div>
+        <div
+          style={{
+            width: "100%",
+            height: "70%",
+          }}
+        >
+          <div style={{ width: "70%", float: "left", height: "100%" }}>
+            <Video stream={mainStream} />
+          </div>
+          <div style={{ width: "30%", float: "right", height: "100%" }}>
+            <Chatting />
+          </div>
+        </div>
+        <div
+          style={{
+            width: "100%",
+            height: "30%",
+            overflowX: "scroll",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {myFeed && (
+            <Video
+              style={{ width: "50px", height: "50px" }}
+              stream={myFeed.stream}
+              onClick={handleMainStream}
+            />
+          )}
+          {renderRemoteVideos}
+        </div>
       </div>
     </>
   );
