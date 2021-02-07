@@ -14,6 +14,7 @@ const Video = (props) => {
   return (
     <>
       <video autoPlay playsInline ref={videoRef} onClick={onClick} />
+      {props.username && <p>props.username</p>}
     </>
   );
 };

@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const Chatting = () => {
+const Chatting = (props) => {
   const [chatData, setChatData] = useState([]);
   const [inputChat, setInputChat] = useState("");
-  useEffect(() => {
-    for (let i = 0; i < 100; i++) {
-      setChatData((prev) => [...prev, "테스트텍스트" + i]);
-    }
-  }, []);
 
   const handleChange = (e) => {
     setInputChat(e.target.value);
   };
 
   const handleClick = () => {
+    props.sendChatData(inputChat);
+    setChatData((prev) => [...prev, inputChat]);
     setInputChat("");
-    console.log(inputChat);
   };
+
+  useEffect(() => {
+    setChatData((prev) => [...prev, props.receiveChat]);
+  }, [props.receiveChat]);
 
   const renderChatData = chatData.map((c, i) => {
     return <p key={i}> {c} </p>;

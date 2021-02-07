@@ -8,10 +8,15 @@ const useReference = () => {
   return reference;
 };
 
+let myroom = 1234; // demo room
+let sfutest = null;
+let username = "username-" + Janus.randomString(5); // 임시 유저네임
+
 const VideoMeetingPage = (props) => {
   const [mainStream, setMainStream] = useState(null);
   const [feeds, setFeeds] = useState([]);
   const [myFeed, setMyFeed] = useState({});
+  const [receiveChat, setReceiveChat] = useState("");
 
   const connectFeed = (feed) => {
     setFeeds((prevFeeds) => [...prevFeeds, feed]);
@@ -27,14 +32,9 @@ const VideoMeetingPage = (props) => {
       process.env.REACT_APP_JANUS_GATEWAY_2,
     ];
     let opaqueId = "videoroomtest-" + Janus.randomString(12); // 개인 식별
-    let username = "username-" + Janus.randomString(5); // 임시 유저네임
-    let sfutest = null;
     let janus = null;
-    let myid = null;
-    let mypvtid = null;
     let subscriber_mode = false; // true면 비디오 열어줌
     let mystream = null;
-    let myroom = 1234; // Demo room
     if (getQueryStringValue("room") !== "")
       myroom = parseInt(getQueryStringValue("room"));
 
@@ -107,6 +107,7 @@ const VideoMeetingPage = (props) => {
               },
               onmessage: function (msg, jsep) {
                 Janus.debug(" ::: Got a message (publisher) :::", msg);
+                console.log("onmessage 수신", msg);
                 var event = msg["videoroom"];
                 Janus.debug("Event : " + event);
                 if (event) {
@@ -308,7 +309,7 @@ const VideoMeetingPage = (props) => {
                 console.log("data channel opened");
               },
               ondata: function (data) {
-                console.log("데이터 수신", data);
+                // empty
               },
               oncleanup: function () {
                 // 피어커넥션 플러그인 닫혔을 때
@@ -503,6 +504,23 @@ const VideoMeetingPage = (props) => {
           console.log("다른 사용자 나감 ㅇㅇㅇ");
           disconnectFeed(remoteFeed);
         },
+        ondataopen: function () {
+          console.log("remote datachannel opened");
+        },
+        ondata: function (data) {
+          console.log("데이터 수신 ===========\n", data);
+          let json = JSON.parse(data);
+          let what = json["textroom"];
+          if (what === "message") {
+            let whisper = json["whisper"];
+            if (whisper) {
+              // private message
+            } else {
+              // public message
+              setReceiveChat(() => json["text"]);
+            }
+          }
+        },
       });
     }
 
@@ -512,6 +530,25 @@ const VideoMeetingPage = (props) => {
       return 1234;
     }
   }, []);
+
+  const sendChatData = (data) => {
+    let message = {
+      textroom: "message",
+      // transaction: Janus.randomString(12),
+      room: myroom,
+      text: data,
+      display: username,
+    };
+    sfutest.data({
+      text: JSON.stringify(message),
+      error: function (err) {
+        console.log(err);
+      },
+      success: function () {
+        console.log("datachannel message sent");
+      },
+    });
+  };
 
   const handleMainStream = (stream) => {
     setMainStream(stream);
@@ -541,7 +578,7 @@ const VideoMeetingPage = (props) => {
             <Video stream={mainStream} />
           </div>
           <div style={{ width: "30%", float: "right", height: "100%" }}>
-            <Chatting />
+            <Chatting sendChatData={sendChatData} receiveChat={receiveChat} />
           </div>
         </div>
         <div
@@ -557,6 +594,7 @@ const VideoMeetingPage = (props) => {
               style={{ width: "50px", height: "50px" }}
               stream={myFeed.stream}
               onClick={handleMainStream}
+              username={username}
             />
           )}
           {renderRemoteVideos}
