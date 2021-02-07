@@ -10,7 +10,7 @@ const Chatting = (props) => {
 
   const handleClick = () => {
     props.sendChatData(inputChat);
-    setChatData((prev) => [...prev, inputChat]);
+    setChatData((prev) => [...prev, `나 : ${inputChat}`]);
     setInputChat("");
   };
 
