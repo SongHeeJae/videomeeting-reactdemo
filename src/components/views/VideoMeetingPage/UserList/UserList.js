@@ -3,7 +3,7 @@ import UserListItem from "./UserListItem/UserListItem";
 import ContextMenu from "../../../ContextMenu/ContextMenu";
 import TextInputModal from "../../../TextInputModal/TextInputModal";
 
-const whisperMenu = "귓속말";
+const whisperMenu = "쪽지 보내기";
 const addFriendMenu = "친구추가";
 const menus = [whisperMenu, addFriendMenu];
 
@@ -55,7 +55,7 @@ const UserList = (props) => {
   };
 
   const handleTextInputModelConfirmText = (data) => {
-    props.sendPrivateChatData(data, activeUsername);
+    props.sendPrivateMessage(data, activeUsername);
   };
 
   const renderUserList = userList.map((u) => {

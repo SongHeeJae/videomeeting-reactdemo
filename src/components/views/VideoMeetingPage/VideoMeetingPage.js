@@ -311,7 +311,7 @@ const VideoMeetingPage = (props) => {
               },
               ondata: function (data) {
                 // empty
-                console.log("내가보낸메시지");
+                console.log("내가받은메시지====\n", data);
               },
               oncleanup: function () {
                 // 피어커넥션 플러그인 닫혔을 때
@@ -335,7 +335,6 @@ const VideoMeetingPage = (props) => {
 
     function publishOwnFeed(useAudio) {
       sfutest.createOffer({
-        // 데이터채널도 원하면 data:true
         media: {
           data: true,
           audioRecv: false,
@@ -347,7 +346,11 @@ const VideoMeetingPage = (props) => {
         simulcast2: doSimulcast2,
         success: function (jsep) {
           Janus.debug("Got publisher SDP!", jsep);
-          var publish = { request: "configure", audio: useAudio, video: true };
+          var publish = {
+            request: "configure",
+            audio: useAudio,
+            video: true,
+          };
           sfutest.send({ message: publish, jsep: jsep });
         },
         error: function (error) {
@@ -514,13 +517,8 @@ const VideoMeetingPage = (props) => {
           let json = JSON.parse(data);
           let what = json["textroom"];
           if (what === "message") {
-            let whisper = json["whisper"];
-            if (whisper) {
-              // private message
-            } else {
-              // public message
-              setReceiveChat(() => `${json["display"]} : ${json["text"]}`);
-            }
+            // public message
+            setReceiveChat(() => `${json["display"]} : ${json["text"]}`);
           }
         },
       });
@@ -536,7 +534,6 @@ const VideoMeetingPage = (props) => {
   const sendChatData = (data) => {
     let message = {
       textroom: "message",
-      // transaction: Janus.randomString(12),
       room: myroom,
       text: data,
       display: username,
@@ -552,9 +549,9 @@ const VideoMeetingPage = (props) => {
     });
   };
 
-  const sendPrivateChatData = (data, target) => {
-    console.log("귓속말 데이터", data);
-    console.log("보낼 유저네임", username);
+  const sendPrivateMessage = (data, target) => {
+    // 구현되면, target한테 1:1 data 쪽지 전송
+    console.log(target, "한테 쪽지 전송:", data);
   };
 
   const handleMainStream = (stream, username) => {
@@ -591,7 +588,7 @@ const VideoMeetingPage = (props) => {
             <UserList
               feeds={feeds}
               username={username}
-              sendPrivateChatData={sendPrivateChatData}
+              sendPrivateMessage={sendPrivateMessage}
             />
           </div>
           <div style={{ width: "60%", float: "left", height: "100%" }}>
