@@ -8,13 +8,13 @@ const Video = (props) => {
 
   const onClick = (e) => {
     if (!props.onClick) return;
-    props.onClick(videoRef.current.srcObject, props.username);
+    props.onClick(videoRef.current.srcObject, props.username, props.muted);
   };
 
   return (
     <>
       <video autoPlay playsInline ref={videoRef} onClick={onClick} />
-      {props.username}
+      <div>{props.username}</div>
     </>
   );
 };

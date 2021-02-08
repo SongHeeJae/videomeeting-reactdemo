@@ -18,6 +18,8 @@ const VideoMeetingPage = (props) => {
   const [feeds, setFeeds] = useState([]);
   const [myFeed, setMyFeed] = useState({});
   const [receiveChat, setReceiveChat] = useState("");
+  const [activeVideo, setActiveVideo] = useState(false);
+  const [activeAudio, setActiveAudio] = useState(true);
 
   const connectFeed = (feed) => {
     setFeeds((prevFeeds) => [...prevFeeds, feed]);
@@ -41,6 +43,10 @@ const VideoMeetingPage = (props) => {
 
     let doSimulcast = false; // 동시 캐스트
     let doSimulcast2 = false;
+
+    const findFeedByUsername = (username) => {
+      return feeds.filter((f) => f.rfdisplay === username)[0];
+    };
 
     Janus.init({
       debug: "all",
@@ -246,6 +252,7 @@ const VideoMeetingPage = (props) => {
                 }
 
                 if (jsep) {
+                  console.log("jsep =============ㅇㅇㅇ", msg);
                   sfutest.handleRemoteJsep({ jsep: jsep });
                   var audio = msg["audio_codec"];
                   if (
@@ -363,14 +370,6 @@ const VideoMeetingPage = (props) => {
           }
         },
       });
-    }
-
-    function toggleMute() {
-      var muted = sfutest.isAudioMuted(); // 뮤트되어있는지 확인
-      Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
-      if (muted) sfutest.unmuteAudio();
-      else sfutest.muteAudio();
-      muted = sfutest.isAudioMuted();
     }
 
     function unpublishOwnFeed() {
@@ -554,11 +553,12 @@ const VideoMeetingPage = (props) => {
     console.log(target, "한테 쪽지 전송:", data);
   };
 
-  const handleMainStream = (stream, username) => {
+  const handleMainStream = (stream, username, muted) => {
     setMainStream(() => {
       return {
         stream: stream,
         username: username,
+        muted: muted,
       };
     });
   };
@@ -571,9 +571,19 @@ const VideoMeetingPage = (props) => {
         onClick={handleMainStream}
         style={{ width: "100px", height: "100px" }}
         username={feed.rfdisplay}
+        muted={feed.muted}
       />
     );
   });
+
+  const handleAudioActiveClick = () => {
+    let muted = sfutest.isAudioMuted();
+    if (muted) sfutest.unmuteAudio();
+    else sfutest.muteAudio();
+    setActiveAudio(() => !sfutest.isAudioMuted());
+  };
+
+  const handleVideoActiveClick = () => {};
 
   return (
     <>
@@ -590,9 +600,19 @@ const VideoMeetingPage = (props) => {
               username={username}
               sendPrivateMessage={sendPrivateMessage}
             />
+            <button onClick={handleAudioActiveClick}>
+              {activeAudio ? "소리 끄기" : "소리 켜기"}
+            </button>
+            <button onClick={handleVideoActiveClick}>
+              {activeVideo ? "비디오 끄기" : "비디오 켜기"}
+            </button>
           </div>
           <div style={{ width: "60%", float: "left", height: "100%" }}>
-            <Video stream={mainStream.stream} username={mainStream.username} />
+            <Video
+              stream={mainStream.stream}
+              username={mainStream.username}
+              muted={mainStream.muted}
+            />
           </div>
           <div style={{ width: "25%", float: "right", height: "100%" }}>
             <Chatting sendChatData={sendChatData} receiveChat={receiveChat} />
