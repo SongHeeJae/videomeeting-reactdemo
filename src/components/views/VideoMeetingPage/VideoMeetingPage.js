@@ -547,12 +547,12 @@ const VideoMeetingPage = (props) => {
     console.log(target, "한테 쪽지 전송:", data);
   };
 
-  const handleMainStream = (stream, username, muted) => {
+  const handleMainStream = (stream, username) => {
+    if (mainStream.username === username) return;
     setMainStream(() => {
       return {
         stream: stream,
         username: username,
-        muted: muted,
       };
     });
   };

@@ -83,6 +83,7 @@ const UserList = (props) => {
         onContextMenu={handleRightClick}
         onClick={handleLeftClick}
       >
+        <h3>접속 유저 목록</h3>
         <strong>{props.username}</strong>
         {renderUserList}
       </div>
