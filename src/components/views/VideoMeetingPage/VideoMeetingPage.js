@@ -18,7 +18,7 @@ const VideoMeetingPage = (props) => {
   const [feeds, setFeeds] = useState([]);
   const [myFeed, setMyFeed] = useState({});
   const [receiveChat, setReceiveChat] = useState("");
-  const [activeVideo, setActiveVideo] = useState(false);
+  const [activeVideo, setActiveVideo] = useState(true);
   const [activeAudio, setActiveAudio] = useState(true);
 
   const connectFeed = (feed) => {
@@ -218,8 +218,8 @@ const VideoMeetingPage = (props) => {
                         remoteFeed.detach();
                       }
                     } else if (msg["unpublished"]) {
-                      //   let unpublished = msg["unpublished"];
-                      //   Janus.log("publisher left: " + unpublished);
+                      let unpublished = msg["unpublished"];
+                      Janus.log("publisher left: " + unpublished);
                       //   if (unpublished === "ok") {
                       //     // 이미 unpblished상태면?
                       //     sfutest.hangup();
@@ -370,12 +370,6 @@ const VideoMeetingPage = (props) => {
           }
         },
       });
-    }
-
-    function unpublishOwnFeed() {
-      // Unpublish our stream
-      var unpublish = { request: "unpublish" };
-      sfutest.send({ message: unpublish });
     }
 
     function newRemoteFeed(id, display, audio, video) {
@@ -583,7 +577,12 @@ const VideoMeetingPage = (props) => {
     setActiveAudio(() => !sfutest.isAudioMuted());
   };
 
-  const handleVideoActiveClick = () => {};
+  const handleVideoActiveClick = () => {
+    let muted = sfutest.isVideoMuted();
+    if (muted) sfutest.unmuteVideo();
+    else sfutest.muteVideo();
+    setActiveVideo(() => !sfutest.isVideoMuted());
+  };
 
   return (
     <>
