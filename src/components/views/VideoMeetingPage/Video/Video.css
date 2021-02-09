@@ -1,0 +1,28 @@
+video::-webkit-media-controls-play-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+video::-webkit-media-controls-timeline {
+  display: none !important;
+  -webkit-appearance: none;
+}
+video::-webkit-media-controls-current-time-display {
+  display: none !important;
+  -webkit-appearance: none;
+}
+video::-webkit-media-controls-time-remaining-display {
+  display: none !important;
+  -webkit-appearance: none;
+}
+video::-webkit-media-controls-mute-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+video::-webkit-media-controls-toggle-closed-captions-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+video::-webkit-media-controls-volume-slider {
+  display: none !important;
+  -webkit-appearance: none;
+}
