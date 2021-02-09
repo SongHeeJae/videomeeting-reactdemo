@@ -3,6 +3,7 @@ import { Janus } from "janus-gateway";
 import Video from "./Video/Video";
 import Chatting from "./Chatting/Chatting";
 import UserList from "./UserList/UserList";
+import hark from "hark";
 
 const useReference = () => {
   const [reference, setReference] = useState(() => createRef());
@@ -20,6 +21,7 @@ const VideoMeetingPage = (props) => {
   const [receiveChat, setReceiveChat] = useState("");
   const [activeVideo, setActiveVideo] = useState(true);
   const [activeAudio, setActiveAudio] = useState(true);
+  const [activeSpeaker, setActiveSpeaker] = useState(false);
 
   const connectFeed = (feed) => {
     setFeeds((prevFeeds) => [...prevFeeds, feed]);
@@ -27,6 +29,21 @@ const VideoMeetingPage = (props) => {
 
   const disconnectFeed = (feed) => {
     setFeeds((prevFeeds) => prevFeeds.filter((f) => f.rfid !== feed.rfid));
+  };
+
+  const createSpeechEvents = (stream) => {
+    let speechEvents = hark(stream, {});
+    return speechEvents;
+  };
+
+  const handleMainStream = (stream, username) => {
+    if (mainStream.username === username) return;
+    setMainStream(() => {
+      return {
+        stream: stream,
+        username: username,
+      };
+    });
   };
 
   useEffect(() => {
@@ -43,10 +60,6 @@ const VideoMeetingPage = (props) => {
 
     let doSimulcast = false; // 동시 캐스트
     let doSimulcast2 = false;
-
-    const findFeedByUsername = (username) => {
-      return feeds.filter((f) => f.rfdisplay === username)[0];
-    };
 
     Janus.init({
       debug: "all",
@@ -217,33 +230,6 @@ const VideoMeetingPage = (props) => {
                         disconnectFeed(remoteFeed);
                         remoteFeed.detach();
                       }
-                    } else if (msg["unpublished"]) {
-                      let unpublished = msg["unpublished"];
-                      Janus.log("publisher left: " + unpublished);
-                      //   if (unpublished === "ok") {
-                      //     // 이미 unpblished상태면?
-                      //     sfutest.hangup();
-                      //     return;
-                      //   }
-                      //   let remoteFeed = null;
-                      //   for (let i = 1; i < 6; i++) {
-                      //     if (feeds[i] && feeds[i].rfid === unpublished) {
-                      //       remoteFeed = feeds[i];
-                      //       break;
-                      //     }
-                      //   }
-                      //   if (remoteFeed != null) {
-                      //     Janus.debug(
-                      //       "Feed " +
-                      //         remoteFeed.rfid +
-                      //         " (" +
-                      //         remoteFeed.rfdisplay +
-                      //         ") has left the room, detaching"
-                      //     );
-                      //     // 비디오 가리는 코드
-                      //     feeds[remoteFeed.rfindex] = null;
-                      //     remoteFeed.detach();
-                      //   }
                     } else if (msg["error"]) {
                       // 426 코드 방 X
                       alert(msg["error"]);
@@ -277,25 +263,17 @@ const VideoMeetingPage = (props) => {
                     console.log(
                       "Our video stream has been rejected, viewers won't see us"
                     );
-
-                    // $('#myvideo').hide(); 비디오 숨기는 코드
-                    // $('#videolocal').append(
-                    // '<div class="no-video-container">' +
-                    // 	'<i class="fa fa-video-camera fa-5 no-video-icon" style="height: 100%;"></i>' +
-                    // 	'<span class="no-video-text" style="font-size: 16px;">Video rejected, no webcam</span>' +
-                    // '</div>');
                   }
                 }
               },
               onlocalstream: function (stream) {
                 Janus.debug(" ::: Got a local stream :::", stream);
                 mystream = stream;
-                // Janus.attachMediaStream(localVideoRef.current, stream);
-                // localVideoRef.current.props = stream;
                 setMyFeed((prev) => ({
                   ...prev,
                   stream: stream,
                 }));
+
                 if (
                   sfutest.webrtcStuff.pc.iceConnectionState !== "completed" &&
                   sfutest.webrtcStuff.pc.iceConnectionState !== "connected"
@@ -484,6 +462,7 @@ const VideoMeetingPage = (props) => {
             let findIndex = prev.findIndex((f) => f.rfid === remoteFeed.rfid);
             let newFeed = [...prev];
             newFeed[findIndex].stream = stream;
+            newFeed[findIndex].hark = createSpeechEvents(stream);
             return newFeed;
           });
           // remoteFeed.stream = stream;
@@ -547,29 +526,6 @@ const VideoMeetingPage = (props) => {
     console.log(target, "한테 쪽지 전송:", data);
   };
 
-  const handleMainStream = (stream, username) => {
-    if (mainStream.username === username) return;
-    setMainStream(() => {
-      return {
-        stream: stream,
-        username: username,
-      };
-    });
-  };
-
-  const renderRemoteVideos = feeds.map((feed) => {
-    return (
-      <Video
-        stream={feed.stream}
-        key={feed.rfid}
-        onClick={handleMainStream}
-        style={{ width: "100px", height: "100px" }}
-        username={feed.rfdisplay}
-        muted={feed.muted}
-      />
-    );
-  });
-
   const handleAudioActiveClick = () => {
     let muted = sfutest.isAudioMuted();
     if (muted) sfutest.unmuteAudio();
@@ -583,6 +539,40 @@ const VideoMeetingPage = (props) => {
     else sfutest.muteVideo();
     setActiveVideo(() => !sfutest.isVideoMuted());
   };
+
+  const handleSpeakerActiveClick = () => {
+    setActiveSpeaker((prev) => !prev);
+  };
+
+  useEffect(() => {
+    if (activeSpeaker) {
+      for (let i = 0; i < feeds.length; i++) {
+        if (!feeds[i].hark) continue;
+        feeds[i].hark.on("speaking", () => {
+          handleMainStream(feeds[i].stream, feeds[i].rfdisplay);
+        });
+      }
+    } else {
+      console.log("멈춤실행");
+      for (let i = 0; i < feeds.length; i++) {
+        if (!feeds[i].hark) continue;
+        feeds[i].hark.off("speaking");
+      }
+    }
+  }, [activeSpeaker]);
+
+  const renderRemoteVideos = feeds.map((feed) => {
+    return (
+      <Video
+        stream={feed.stream}
+        key={feed.rfid}
+        onClick={handleMainStream}
+        style={{ width: "100px", height: "100px" }}
+        username={feed.rfdisplay}
+        muted={false}
+      />
+    );
+  });
 
   return (
     <>
@@ -605,12 +595,15 @@ const VideoMeetingPage = (props) => {
             <button onClick={handleVideoActiveClick}>
               {activeVideo ? "비디오 끄기" : "비디오 켜기"}
             </button>
+            <button onClick={handleSpeakerActiveClick}>
+              {activeSpeaker ? "화자 추적 비활성화" : "화자 추적 활성화"}
+            </button>
           </div>
           <div style={{ width: "60%", float: "left", height: "100%" }}>
             <Video
               stream={mainStream.stream}
               username={mainStream.username}
-              muted={mainStream.muted}
+              muted={true}
             />
           </div>
           <div style={{ width: "25%", float: "right", height: "100%" }}>
@@ -631,6 +624,8 @@ const VideoMeetingPage = (props) => {
               stream={myFeed.stream}
               onClick={handleMainStream}
               username={username}
+              muted={false}
+              // activeSpeaker={activeSpeaker}
             />
           )}
           {renderRemoteVideos}

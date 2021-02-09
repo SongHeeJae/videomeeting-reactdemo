@@ -1,19 +1,11 @@
-import React, { useRef, useEffect } from "react";
-import hark from "hark";
+import React, { useRef, useEffect, useState } from "react";
 
 const Video = (props) => {
   const videoRef = useRef();
-  useEffect(() => {
-    videoRef.current.srcObject = props.stream;
-    if (props.stream) {
-      let speechEvents = hark(props.stream, {});
-      speechEvents.on("speaking", function () {
-        onClick();
-      });
 
-      speechEvents.on("stopped_speaking", function () {
-        // empty
-      });
+  useEffect(() => {
+    if (props.stream) {
+      videoRef.current.srcObject = props.stream;
     }
   }, [props.stream]);
 
@@ -24,7 +16,13 @@ const Video = (props) => {
 
   return (
     <>
-      <video autoPlay playsInline ref={videoRef} onClick={onClick} />
+      <video
+        autoPlay
+        playsInline
+        ref={videoRef}
+        onClick={onClick}
+        muted={props.muted}
+      />
       <span>{props.username}</span>
     </>
   );
