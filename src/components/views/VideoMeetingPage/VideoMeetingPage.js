@@ -10,9 +10,10 @@ const useReference = () => {
   return reference;
 };
 
-let myroom = 1234; // demo room
+let myroom = 5678; // demo room
 let sfutest = null;
 let username = "username-" + Janus.randomString(5); // 임시 유저네임
+let receivedFileChunk = {};
 
 const VideoMeetingPage = (props) => {
   const [mainStream, setMainStream] = useState({});
@@ -23,6 +24,7 @@ const VideoMeetingPage = (props) => {
   const [activeAudio, setActiveAudio] = useState(true);
   const [activeSpeaker, setActiveSpeaker] = useState(false);
   const [activeSharing, setActiveSharing] = useState(false);
+  const [receiveFile, setReceiveFile] = useState(null);
 
   const connectFeed = (feed) => {
     setFeeds((prevFeeds) => [...prevFeeds, feed]);
@@ -486,12 +488,31 @@ const VideoMeetingPage = (props) => {
           console.log("remote datachannel opened");
         },
         ondata: function (data) {
-          console.log("데이터 수신 ===========\n", data);
           let json = JSON.parse(data);
           let what = json["textroom"];
           if (what === "message") {
             // public message
             setReceiveChat(() => `${json["display"]} : ${json["text"]}`);
+          } else if (what === "file") {
+            let from = json["display"];
+            let filename = json["text"]["filename"];
+            let chunk = json["text"]["message"];
+            let last = json["text"]["last"];
+            if (!receivedFileChunk[from]) receivedFileChunk[from] = {};
+            if (!receivedFileChunk[from][filename]) {
+              receivedFileChunk[from][filename] = [];
+            }
+            receivedFileChunk[from][filename].push(chunk);
+            if (last) {
+              setReceiveFile(() => {
+                return {
+                  data: receivedFileChunk[from][filename].join(""),
+                  filename: filename,
+                  from: from,
+                };
+              });
+              delete receivedFileChunk[from][filename];
+            }
           }
         },
       });
@@ -500,7 +521,7 @@ const VideoMeetingPage = (props) => {
     // Helper to parse query string
     function getQueryStringValue(name) {
       // 쿼리스트링에서 룸네임 찾기
-      return 1234;
+      return 5678;
     }
   }, []);
 
@@ -518,6 +539,24 @@ const VideoMeetingPage = (props) => {
       },
       success: function () {
         console.log("datachannel message sent");
+      },
+    });
+  };
+
+  const transferFile = (data) => {
+    let message = {
+      textroom: "file",
+      room: myroom,
+      text: data,
+      display: username,
+    };
+    sfutest.data({
+      text: JSON.stringify(message),
+      error: function (err) {
+        console.log(err);
+      },
+      success: function () {
+        console.log("datachannel file sent...");
       },
     });
   };
@@ -600,6 +639,7 @@ const VideoMeetingPage = (props) => {
   const renderRemoteVideos = feeds.map((feed) => {
     return (
       <div
+        key={feed.rfid}
         style={{
           width: "100px",
           height: "100px",
@@ -609,7 +649,6 @@ const VideoMeetingPage = (props) => {
       >
         <Video
           stream={feed.stream}
-          key={feed.rfid}
           onClick={handleMainStream}
           username={feed.rfdisplay}
           muted={false}
@@ -641,7 +680,12 @@ const VideoMeetingPage = (props) => {
             />
           </div>
           <div style={{ width: "25%", float: "right", height: "100%" }}>
-            <Chatting sendChatData={sendChatData} receiveChat={receiveChat} />
+            <Chatting
+              sendChatData={sendChatData}
+              receiveChat={receiveChat}
+              transferFile={transferFile}
+              receiveFile={receiveFile}
+            />
           </div>
         </div>
         <div style={{ float: "left" }}>
