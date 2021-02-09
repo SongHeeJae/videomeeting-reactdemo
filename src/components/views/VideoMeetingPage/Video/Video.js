@@ -16,14 +16,17 @@ const Video = (props) => {
 
   return (
     <>
-      <video
-        autoPlay
-        playsInline
-        ref={videoRef}
-        onClick={onClick}
-        muted={props.muted}
-      />
-      <span>{props.username}</span>
+      <div>
+        <video
+          style={{ width: "100%", height: "100%" }}
+          autoPlay
+          playsInline
+          ref={videoRef}
+          onClick={onClick}
+          muted={props.muted}
+        />
+      </div>
+      <div>{props.username}</div>
     </>
   );
 };

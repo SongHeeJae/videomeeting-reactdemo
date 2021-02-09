@@ -28,7 +28,7 @@ const Chatting = (props) => {
         style={{
           border: "1px solid",
           overflow: "auto",
-          height: "500px",
+          minHeight: "500px",
         }}
       >
         {renderChatData}

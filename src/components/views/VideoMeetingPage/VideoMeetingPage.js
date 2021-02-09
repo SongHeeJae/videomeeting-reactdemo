@@ -22,6 +22,7 @@ const VideoMeetingPage = (props) => {
   const [activeVideo, setActiveVideo] = useState(true);
   const [activeAudio, setActiveAudio] = useState(true);
   const [activeSpeaker, setActiveSpeaker] = useState(false);
+  const [activeSharing, setActiveSharing] = useState(false);
 
   const connectFeed = (feed) => {
     setFeeds((prevFeeds) => [...prevFeeds, feed]);
@@ -544,6 +545,42 @@ const VideoMeetingPage = (props) => {
     setActiveSpeaker((prev) => !prev);
   };
 
+  const handleSharingActiveClick = () => {
+    if (activeSharing) {
+      sfutest.createOffer({
+        media: {
+          replaceVideo: true,
+        },
+        success: function (jsep) {
+          Janus.debug(jsep);
+          sfutest.send({ message: { audio: true, video: true }, jsep: jsep });
+        },
+        error: function (error) {
+          alert("WebRTC error... " + JSON.stringify(error));
+        },
+      });
+    } else {
+      if (!Janus.isExtensionEnabled()) {
+        alert("확장프로그램 설치해주세요");
+        return;
+      }
+      sfutest.createOffer({
+        media: {
+          video: "screen",
+          replaceVideo: true,
+        },
+        success: function (jsep) {
+          Janus.debug(jsep);
+          sfutest.send({ message: { audio: true, video: true }, jsep: jsep });
+        },
+        error: function (error) {
+          alert("WebRTC error... " + JSON.stringify(error));
+        },
+      });
+    }
+    setActiveSharing((prev) => !prev);
+  };
+
   useEffect(() => {
     if (activeSpeaker) {
       for (let i = 0; i < feeds.length; i++) {
@@ -553,7 +590,6 @@ const VideoMeetingPage = (props) => {
         });
       }
     } else {
-      console.log("멈춤실행");
       for (let i = 0; i < feeds.length; i++) {
         if (!feeds[i].hark) continue;
         feeds[i].hark.off("speaking");
@@ -563,14 +599,22 @@ const VideoMeetingPage = (props) => {
 
   const renderRemoteVideos = feeds.map((feed) => {
     return (
-      <Video
-        stream={feed.stream}
-        key={feed.rfid}
-        onClick={handleMainStream}
-        style={{ width: "100px", height: "100px" }}
-        username={feed.rfdisplay}
-        muted={false}
-      />
+      <div
+        style={{
+          width: "100px",
+          height: "100px",
+          float: "left",
+          margin: "3px",
+        }}
+      >
+        <Video
+          stream={feed.stream}
+          key={feed.rfid}
+          onClick={handleMainStream}
+          username={feed.rfdisplay}
+          muted={false}
+        />
+      </div>
     );
   });
 
@@ -580,7 +624,6 @@ const VideoMeetingPage = (props) => {
         <div
           style={{
             width: "100%",
-            height: "70%",
           }}
         >
           <div style={{ width: "15%", float: "left" }}>
@@ -589,17 +632,8 @@ const VideoMeetingPage = (props) => {
               username={username}
               sendPrivateMessage={sendPrivateMessage}
             />
-            <button onClick={handleAudioActiveClick}>
-              {activeAudio ? "소리 끄기" : "소리 켜기"}
-            </button>
-            <button onClick={handleVideoActiveClick}>
-              {activeVideo ? "비디오 끄기" : "비디오 켜기"}
-            </button>
-            <button onClick={handleSpeakerActiveClick}>
-              {activeSpeaker ? "화자 추적 비활성화" : "화자 추적 활성화"}
-            </button>
           </div>
-          <div style={{ width: "60%", float: "left", height: "100%" }}>
+          <div style={{ width: "60%", float: "left" }}>
             <Video
               stream={mainStream.stream}
               username={mainStream.username}
@@ -610,24 +644,45 @@ const VideoMeetingPage = (props) => {
             <Chatting sendChatData={sendChatData} receiveChat={receiveChat} />
           </div>
         </div>
+        <div style={{ float: "left" }}>
+          <button onClick={handleAudioActiveClick}>
+            {activeAudio ? "소리 끄기" : "소리 켜기"}
+          </button>
+          <button onClick={handleVideoActiveClick}>
+            {activeVideo ? "비디오 끄기" : "비디오 켜기"}
+          </button>
+          <button onClick={handleSpeakerActiveClick}>
+            {activeSpeaker ? "화자 추적 비활성화" : "화자 추적 활성화"}
+          </button>
+          <button onClick={handleSharingActiveClick}>
+            {activeSharing ? "화면 공유 비활성화" : "화면 공유 활성화"}
+          </button>
+        </div>
         <div
           style={{
             width: "100%",
-            height: "30%",
             overflowX: "scroll",
             whiteSpace: "nowrap",
           }}
         >
-          {myFeed && (
-            <Video
-              style={{ width: "50px", height: "50px" }}
-              stream={myFeed.stream}
-              onClick={handleMainStream}
-              username={username}
-              muted={false}
-              // activeSpeaker={activeSpeaker}
-            />
-          )}
+          <div
+            style={{
+              width: "100px",
+              height: "100px",
+              float: "left",
+              margin: "3px",
+            }}
+          >
+            {myFeed && (
+              <Video
+                stream={myFeed.stream}
+                onClick={handleMainStream}
+                username={username}
+                muted={false}
+                // activeSpeaker={activeSpeaker}
+              />
+            )}
+          </div>
           {renderRemoteVideos}
         </div>
       </div>

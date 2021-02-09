@@ -79,7 +79,12 @@ const UserList = (props) => {
         />
       )}
       <div
-        style={{ border: "solid 1px", overflow: "auto", height: "500px" }}
+        style={{
+          border: "solid 1px",
+          overflow: "auto",
+          height: "80%",
+          minHeight: "500px",
+        }}
         onContextMenu={handleRightClick}
         onClick={handleLeftClick}
       >
