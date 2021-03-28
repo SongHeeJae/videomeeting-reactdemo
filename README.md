@@ -6,4 +6,6 @@ front - react
 backend - spring boot + mysql
 signaling, media server - janus gateway
 
-진행중..
+...
+
+https://kukemeet.com
